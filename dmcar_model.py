@@ -16,8 +16,8 @@ import picar
 from Line import Line
 from lane_detection import color_frame_pipeline
 from lane_detection import stabilize_steering_angle
-from lane_detection import compute_steering_angle 
-from lane_detection import compute_steering_angle_model 
+from lane_detection import compute_steering_angle
+from lane_detection import compute_steering_angle_model
 from lane_detection import PID
 import time
 import datetime
@@ -29,11 +29,11 @@ import tensorflow as tf
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video",
-	help="path to the output video clip header, e.g., -v out_video")
+                help="path to the output video clip header, e.g., -v out_video")
 ap.add_argument("-b", "--buffer", type=int, default=64,
-	help="max buffer size")
+                help="max buffer size")
 ap.add_argument("-f", "--file",
-        help="path for the training file header, e.g., -f out_file")
+                help="path for the training file header, e.g., -f out_file")
 args = vars(ap.parse_args())
 
 # define the paths to the Stop/Non-Stop NVIDIA CNN learning model
@@ -55,8 +55,9 @@ fw.ready()
 # Time init and frame sequence
 start_time = 0.0
 
+
 def main():
-    #load the trained NVIDIA CNN model for lane detection
+    # load the trained NVIDIA CNN model for lane detection
     model = load_model(MODEL_PATH)
 
     # Grab the reference to the webcam
@@ -75,14 +76,14 @@ def main():
     time.sleep(1.0)
 
     SPEED = 50
-    ANGLE = 90			# steering wheel angle: 90 -> straight 
+    ANGLE = 90			# steering wheel angle: 90 -> straight
     MAX_ANGLE = 20		# Maximum angle to turn right at one time
-    MIN_ANGLE = -MAX_ANGLE	# Maximum angle to turn left at one time
+    MIN_ANGLE = -MAX_ANGLE  # Maximum angle to turn left at one time
     isMoving = False		# True: car is moving
     posError = []		# difference between middle and car position
     bw.speed = 0		# car speed
     fw.turn(90)			# steering wheel angle
-    curr_steering_angle = 90	# default angle
+    curr_steering_angle = 90  # default angle
     i = 0			# frome sequence
 
     # initialize the total number of frames that *consecutively* contain
@@ -102,10 +103,10 @@ def main():
         frame = imutils.resize(frame, width=320)
         (h, w) = frame.shape[:2]
 
-        org_frame = frame 
+        org_frame = frame
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         curr_steering_angle = compute_steering_angle_model(frame, model)
-        ANGLE = curr_steering_angle 
+        ANGLE = curr_steering_angle
 
         #print("Angle -> ", ANGLE)
         cv2.imshow('blend', org_frame)
@@ -127,7 +128,8 @@ def main():
 
         # if a file path is provided, write a training image
         if args.get("file", False):
-            cv2.imwrite("./model_lane_follow/train_data/%s_%03d_%03d.png" % (args["file"], i, ANGLE), org_frame)
+            cv2.imwrite("./model_lane_follow/train_data/%s_%03d_%03d.png" %
+                        (args["file"], i, ANGLE), org_frame)
             i += 1
 
         keyin = cv2.waitKey(1) & 0xFF
@@ -141,34 +143,34 @@ def main():
         # if the 's' key is pressed, straight
         # if the 'z' key is pressed, stop a car
         if keycmd == 'q':
-    	    break
+            break
         elif keycmd == 'w':
-    	    isMoving = True
-    	    bw.speed = SPEED
-    	    bw.forward()
+            isMoving = True
+            bw.speed = SPEED
+            bw.forward()
         elif keycmd == 'x':
-    	    bw.speed = SPEED
-    	    bw.backward()
+            bw.speed = SPEED
+            bw.backward()
         elif keycmd == 'a':
-    	    ANGLE -= 5
-    	    if ANGLE <= 45:
-    	        ANGLE = 45
-    	    #fw.turn_left()
-    	    fw.turn(ANGLE)
+            ANGLE -= 5
+            if ANGLE <= 45:
+                ANGLE = 45
+            # fw.turn_left()
+            fw.turn(ANGLE)
         elif keycmd == 'd':
-    	    ANGLE += 5
-    	    if ANGLE >= 135:
-    	        ANGLE = 135
-    	    #fw.turn_right()
-    	    fw.turn(ANGLE)
+            ANGLE += 5
+            if ANGLE >= 135:
+                ANGLE = 135
+            # fw.turn_right()
+            fw.turn(ANGLE)
         elif keycmd == 's':
-    	    ANGLE = 90
-    	    #fw.turn_straight()
-    	    fw.turn(ANGLE)
+            ANGLE = 90
+            # fw.turn_straight()
+            fw.turn(ANGLE)
         elif keycmd == 'z':
-    	    isMoving = False
-    	    bw.stop()
-    
+            isMoving = False
+            bw.stop()
+
     # if we are not using a video file, stop the camera video stream
     if writer is not None:
         writer.release()
@@ -177,9 +179,10 @@ def main():
     # initialize picar
     bw.speed = 0
     fw.turn(90)
-	    
+
     # close all windows
     cv2.destroyAllWindows()
+
 
 if __name__ == '__main__':
     main()
