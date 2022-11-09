@@ -99,6 +99,7 @@ def main():
     STOP = False                # If STOP is detected
     LAST_STOP = False
 
+    idx_of_main_loop = 0
     # keep looping
     while True:
         # grab the current frame
@@ -120,81 +121,84 @@ def main():
         image1 = image1.astype("float") / 255.0
         image1 = img_to_array(image1)
         image1 = np.expand_dims(image1, axis=0)
+
         image2 = cv2.resize(image2, (28, 28))
         image2 = image2.astype("float") / 255.0
         image2 = img_to_array(image2)
         image2 = np.expand_dims(image2, axis=0)
 
         frame_buffer.append(frame)
-        blend_frame, lane_lines = color_frame_pipeline(frames=frame_buffer, \
-                            solid_lines=True, \
-                            temporal_smoothing=True)
+        if idx_of_main_loop % 2 == 0:
+            blend_frame, lane_lines = color_frame_pipeline(frames=frame_buffer, \
+                                solid_lines=True, \
+                                temporal_smoothing=True)
 
-        # Compute and stablize steering angle and draw it on the frame
-        blend_frame, steering_angle, no_lines = compute_steering_angle(blend_frame, lane_lines)
-        curr_steering_angle = stabilize_steering_angle(curr_steering_angle, steering_angle, no_lines)
-        ANGLE = curr_steering_angle
-        #print("Angle -> ", ANGLE)
+            # Compute and stablize steering angle and draw it on the frame
+            blend_frame, steering_angle, no_lines = compute_steering_angle(blend_frame, lane_lines)
+            curr_steering_angle = stabilize_steering_angle(curr_steering_angle, steering_angle, no_lines)
+            ANGLE = curr_steering_angle
+            #print("Angle -> ", ANGLE)
 
-        # classify the input image and initialize the label and
-        # probability of the prediction
-        (notStop1, stop1) = model.predict(image1)[0]
-        (notStop2, stop2) = model.predict(image2)[0]
+        else:
+            # classify the input image and initialize the label and
+            # probability of the prediction
+            (notStop1, stop1) = model.predict(image1)[0]
+            (notStop2, stop2) = model.predict(image2)[0]
 
-        label = "Not Stop"
-        proba1 = stop1
-        proba2 = stop2
+            label = "Not Stop"
+            proba1 = stop1
+            proba2 = stop2
 
-        # LAST_STOP = True: currenly stopping because of stop
-        #                   dectection (if >=20 frames, release)
-        if LAST_STOP:
-            AFTER_STOP_SEC += 1
-            print("No stop detection ...", AFTER_STOP_SEC)
-            if AFTER_STOP_SEC >= 20:
-                LAST_STOP = False
-                AFTER_STOP_SEC = 0
+            # LAST_STOP = True: currenly stopping because of stop
+            #                   dectection (if >=20 frames, release)
+            if LAST_STOP:
+                AFTER_STOP_SEC += 1
+                print("No stop detection ...", AFTER_STOP_SEC)
+                if AFTER_STOP_SEC >= 20:
+                    LAST_STOP = False
+                    AFTER_STOP_SEC = 0
 
-        # check to see if stop sign was detected using our convolutional
-        # neural network
-        if ((stop1 > notStop1) or (stop2 > notStop2)) and not LAST_STOP and isStart:
-            # update the label and prediction probability
-            label = "Stop"
-            # increment the total number of consecutive frames that
-            # contain stop
-            if isMoving:
-                TOTAL_CONSEC += 1
+            # check to see if stop sign was detected using our convolutional
+            # neural network
+            if ((stop1 > notStop1) or (stop2 > notStop2)) and not LAST_STOP and isStart:
+                # update the label and prediction probability
+                label = "Stop"
+                # increment the total number of consecutive frames that
+                # contain stop
+                if isMoving:
+                    TOTAL_CONSEC += 1
 
-            # check to see if we should raise the stop sign alarm
-            if isMoving and not STOP and TOTAL_CONSEC >= TOTAL_THRESH:
-                # indicate that stop has been found
-                STOP = True
-                bw.stop()
-                isMoving = False
-                STOP_SEC += 1
-                print("Stop Sign..." + str(STOP_SEC))
-            elif STOP and STOP_SEC <= 10:
-                bw.stop()
-                isMoving = False
-                STOP_SEC += 1
-                print("Stop is going on..." + str(STOP_SEC))
-            elif STOP and STOP_SEC > 10:
+                # check to see if we should raise the stop sign alarm
+                if isMoving and not STOP and TOTAL_CONSEC >= TOTAL_THRESH:
+                    # indicate that stop has been found
+                    STOP = True
+                    bw.stop()
+                    isMoving = False
+                    STOP_SEC += 1
+                    print("Stop Sign..." + str(STOP_SEC))
+                elif STOP and STOP_SEC <= 10:
+                    bw.stop()
+                    isMoving = False
+                    STOP_SEC += 1
+                    print("Stop is going on..." + str(STOP_SEC))
+                elif STOP and STOP_SEC > 10:
+                    STOP = False
+                    LAST_STOP = True
+                    bw.speed = SPEED
+                    bw.forward()
+                    isMoving = True
+                    STOP_SEC = 0
+                    TOTAL_CONSEC = 0
+                    print("Stop is done...Going", STOP_SEC)
+
+            # otherwise, reset the total number of consecutive frames and the
+            # stop sign alarm
+            else:
+                TOTAL_CONSEC = 0
                 STOP = False
-                LAST_STOP = True
-                bw.speed = SPEED
                 bw.forward()
                 isMoving = True
                 STOP_SEC = 0
-                TOTAL_CONSEC = 0
-                print("Stop is done...Going", STOP_SEC)
-
-        # otherwise, reset the total number of consecutive frames and the
-        # stop sign alarm
-        else:
-            TOTAL_CONSEC = 0
-            STOP = False
-            bw.forward()
-            isMoving = True
-            STOP_SEC = 0
 
         # build the label and draw it on the frame
         label = "{}: {:.2f}% {:.2f}%".format(label, proba1 * 100, proba2 * 100)
