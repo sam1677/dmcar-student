@@ -11,7 +11,7 @@ class State(Enum):
     RIGHT = 2
 
 
-class CalibratedCar:
+class Car:
     def __init__(self, config='config', lts_offset=0, rts_offset=0):
         picar.setup()
 

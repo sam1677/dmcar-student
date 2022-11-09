@@ -8,14 +8,12 @@
 from picar import back_wheels, front_wheels
 import picar
 import time
-from cali_car import CalibratedCar
+from cali_car import Car
 
 
 db_file = "/home/pi/dmcar-student/picar/config"
 
-car =  CalibratedCar(
-    config = db_file, rts_offset = -10
-)
+car = Car(config=db_file)
 
 SPEED = 50
 while True:
